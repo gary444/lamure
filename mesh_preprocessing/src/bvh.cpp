@@ -32,8 +32,12 @@
 
 namespace SMS = CGAL::Surface_mesh_simplification ;
 
+
+
 namespace lamure {
 namespace mesh {
+
+
 
 bvh::bvh(std::vector<Triangle_Chartid>& triangles, uint32_t primitives_per_node)
 : lamure::ren::bvh() {
@@ -357,6 +361,8 @@ void bvh::create_hierarchy(std::vector<Triangle_Chartid>& triangles) {
 
 }
 
+
+
 void bvh::simplify(
   std::vector<Triangle_Chartid>& left_child_tris,
   std::vector<Triangle_Chartid>& right_child_tris,
@@ -453,9 +459,10 @@ void bvh::simplify(
           c->vertex()->point()[0],
           c->vertex()->point()[1],
           c->vertex()->point()[2]);
-        tri.v0_.tex_ = vec2f(
-          c->vertex()->point().get_u(),
-          c->vertex()->point().get_v());
+        tri.v0_.tex_ = get_best_tex_coord(c);
+        // tri.v0_.tex_ = vec2f(
+        //   c->vertex()->point().get_u(),
+        //   c->vertex()->point().get_v());
         // tri.v0_.tex_ = vec2f(
         //   c->facet()->t_coords[0].x(),
         //   c->facet()->t_coords[0].y());
@@ -466,9 +473,10 @@ void bvh::simplify(
           c->vertex()->point()[0],
           c->vertex()->point()[1],
           c->vertex()->point()[2]);
-        tri.v1_.tex_ = vec2f(
-          c->vertex()->point().get_u(),
-          c->vertex()->point().get_v());
+        tri.v1_.tex_ = get_best_tex_coord(c);
+        // tri.v1_.tex_ = vec2f(
+        //   c->vertex()->point().get_u(),
+        //   c->vertex()->point().get_v());
         // tri.v1_.tex_ = vec2f(
         //   c->facet()->t_coords[1].x(),
         //   c->facet()->t_coords[1].y());
@@ -479,9 +487,10 @@ void bvh::simplify(
           c->vertex()->point()[0],
           c->vertex()->point()[1],
           c->vertex()->point()[2]);
-        tri.v2_.tex_ = vec2f(
-          c->vertex()->point().get_u(),
-          c->vertex()->point().get_v());
+        tri.v2_.tex_ = get_best_tex_coord(c);
+        // tri.v2_.tex_ = vec2f(
+        //   c->vertex()->point().get_u(),
+        //   c->vertex()->point().get_v());
         // tri.v2_.tex_ = vec2f(
         //   c->facet()->t_coords[2].x(),
         //   c->facet()->t_coords[2].y());
@@ -496,8 +505,31 @@ void bvh::simplify(
     output_tris.push_back(tri);
   }
 
-
 }
+
+//returns best fitting tex coord from a list of candidates
+vec2f bvh::get_best_tex_coord(Polyhedron::Halfedge_around_facet_circulator hc){
+
+  std::vector<UV_Candidate> uvcs = hc->vertex()->point().uv_candidates;
+
+  //debug only
+  if (uvcs.size() == 0){
+    std::cout << "No UV_Candidates found!" << std::endl;
+    return vec2f(0,0);
+  }
+
+  //if only one option, return that
+  if (uvcs.size() == 1)
+  {
+    return uvcs[0].tex;
+  }
+  else {
+    //for now....
+    return uvcs[0].tex;
+    //TODO calculate best option
+  }
+}
+
 
 void bvh::write_lod_file(const std::string& lod_filename) {
 
@@ -536,13 +568,18 @@ void bvh::write_lod_file(const std::string& lod_filename) {
   auto lod = std::make_shared<lamure::ren::lod_stream>();
   lod->open_for_writing(lod_filename);
 
+    int vs_written = 0;
 
   for (uint32_t node_id = 0; node_id < num_nodes_; ++node_id) {
+
+vs_written += primitives_per_node_;
+
     size_t length_in_bytes = primitives_per_node_*sizeof(vertex);
     size_t start_in_file = node_id*length_in_bytes;
     lod->write((char*)&simple_triangles_map[node_id][0], start_in_file, length_in_bytes);
   }
 
+  std::cout << "wrote " << vs_written << "vertices to new lod file\n"; 
 
   lod->close();
 

@@ -1008,6 +1008,8 @@ int main(int argc, char *argv[]) {
   std::string out_lod_filename = bvh_filename.substr(0, bvh_filename.size()-4) + "_uv.lod";
   std::shared_ptr<lamure::ren::lod_stream> lod_out = std::make_shared<lamure::ren::lod_stream>();
   lod_out->open_for_writing(out_lod_filename);
+
+  int vs_written = 0;
  
   for (uint32_t node_id = 0; node_id < first_leaf; ++node_id) { //loops only inner nodes
 
@@ -1048,11 +1050,16 @@ int main(int argc, char *argv[]) {
     //afterwards, write the node to new file
     lod_out->write((char*)&vertices[0], (vertices_per_node*node_id*size_of_vertex),
       (vertices_per_node * size_of_vertex));
+
+    vs_written += vertices_per_node;
   }
 
   //for all leaf nodes, we will just write the entire triangles array to disk (which stores all leaf triangles)
   lod_out->write((char*)&triangles[0], first_leaf*vertices_per_node*size_of_vertex,
     3 * size_of_vertex * triangles.size());
+
+  vs_written += triangles.size() * 3;
+  std::cout << "wrote " << vs_written << "vertices to new lod file\n"; 
 
   lod_out->close();
   lod_out.reset();

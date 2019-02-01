@@ -6,6 +6,7 @@
 #include <lamure/mesh/triangle.h>
 #include <lamure/mesh/triangle_chartid.h>
 #include <lamure/ren/bvh.h>
+#include <lamure/mesh/polyhedron.h>
 
 #include <map>
 #include <vector>
@@ -43,7 +44,8 @@ protected:
     std::vector<Triangle_Chartid>& output_tris,
     bool contrain_edges);
 
-
+  vec2f get_best_tex_coord(Polyhedron::Halfedge_around_facet_circulator hc);
+  
   //node_id -> triangles
   std::map<uint32_t, std::vector<Triangle_Chartid>> triangles_map_;
 

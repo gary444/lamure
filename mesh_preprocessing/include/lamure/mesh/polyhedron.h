@@ -75,9 +75,9 @@ struct XtndVertex : public CGAL::HalfedgeDS_vertex_base<Refs, T, P>  {
 };
 
 struct UV_Candidate {
-  TexCoord tex_;
-  Vec3 v_prev;
-  Vec3 v_next;
+  scm::math::vec2f tex;
+  scm::math::vec3f v_prev;
+  scm::math::vec3f v_next;
 };
 
 //extended point class
@@ -105,6 +105,7 @@ struct XtndPoint : public Traits::Point_3 {
   std::vector<UV_Candidate> uv_candidates;
 
   void add_uv_candidate(UV_Candidate uvc){
+    //TODO implement checking for doubles, discarding incoming UVs if double is found
     uv_candidates.push_back(uvc);
   }
 
@@ -298,19 +299,49 @@ public:
       }
     }
 
-    // assign_vertex_candidates(input_triangles, tris, vertices);
+    assign_vertex_candidates(input_triangles, tris, vertices);
   }
 
-  // void assign_vertex_candidates(std::vector<lamure::mesh::Triangle_Chartid>& input_triangles,
-  //                                   std::vector<uint32_t>& tris,
-  //                                   std::vector<XtndPoint<Kernel> >& vertices) {
-  //   //for all vertex indices of triangles
-  //   for (int i = 0; i < tris.size(); i++){
+  void assign_vertex_candidates(std::vector<lamure::mesh::Triangle_Chartid>& input_triangles,
+                                    std::vector<uint32_t>& tris,
+                                    std::vector<XtndPoint<Kernel> >& vertices) {
+    //for all vertex indices of triangles
+    for (uint32_t i = 0; i < tris.size(); i++){
 
-  //     //get uv and edge directions from that input_triangle
-  //     auto& 
-  //   }
-  // }
+      //get uv and edge directions from corresponding input_triangle
+      auto& orig_tri = input_triangles[i/3];
+      UV_Candidate uvc;
+      switch (i % 3){
+        case 0:
+        {
+          uvc.tex = orig_tri.v0_.tex_;
+          uvc.v_prev = orig_tri.v2_.pos_ - orig_tri.v0_.pos_;
+          uvc.v_next = orig_tri.v1_.pos_ - orig_tri.v0_.pos_;
+          break;
+        }
+        case 1:
+        {
+          uvc.tex = orig_tri.v1_.tex_;
+          uvc.v_prev = orig_tri.v0_.pos_ - orig_tri.v1_.pos_;
+          uvc.v_next = orig_tri.v2_.pos_ - orig_tri.v1_.pos_;
+          break;
+        }
+        case 2:
+        {
+          uvc.tex = orig_tri.v2_.tex_;
+          uvc.v_prev = orig_tri.v1_.pos_ - orig_tri.v2_.pos_;
+          uvc.v_next = orig_tri.v0_.pos_ - orig_tri.v2_.pos_;
+          break;
+        }
+        default:
+          break;
+      }
+
+      //determine corresponding vertex struct
+      int vertex_id = tris[i];
+      vertices[vertex_id].add_uv_candidate(uvc);
+    }
+  }
 
 };
 
